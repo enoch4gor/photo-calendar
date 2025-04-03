@@ -1,38 +1,333 @@
-.App {
-  text-align: center;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f5;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+.app {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+.app-header {
+  background-color: #5e60ce;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  font-family: 'Always Forever', cursive;
+  font-size: 42px;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.app-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  padding: 20px;
+}
+
+.upload-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.upload-container h2 {
+  margin-bottom: 15px;
+  color: #5e60ce;
+  font-family: 'Always Forever', cursive;
+  font-size: 36px;
+}
+
+.upload-container p {
+  margin-bottom: 30px;
+  color: #457b9d;
+  font-size: 18px;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-button {
+  background-color: #5e60ce;
+  color: white;
+  padding: 14px 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: 'Always Forever', cursive;
+  font-size: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.upload-button:hover {
+  background-color: #4a4baa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.editor-container {
+  width: 100%;
+  height: calc(100vh - 150px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.editor-area {
+  width: 100%;
+  max-width: 1400px;
+  height: calc(100vh - 210px);
+  min-height: 500px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background-color: transparent;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+  max-width: 1400px;
+  justify-content: center;
+}
+
+.back-button, .download-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: 'Always Forever', cursive;
+  font-size: 18px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+}
+
+.back-button {
+  background-color: #f1faee;
+  color: #1d3557;
+  border: 2px solid #a8dadc;
+}
+
+.back-button:hover {
+  background-color: #a8dadc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.download-button {
+  background-color: #e63946;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.download-button:hover {
+  background-color: #d62b39;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes App-logo-spin {
+/* Photo Editor Styles */
+.photo-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.calendar-controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  width: 100%;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.calendar-controls button {
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: 'Always Forever', cursive;
+  font-size: 18px;
+}
+
+.calendar-controls button:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.calendar-controls button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile specific fixes */
+@media (max-width: 768px) {
+  body, html {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .app {
+    min-height: 100%;
+    position: relative;
+  }
+  
+  .app-header h1 {
+    font-size: 32px;
+  }
+  
+  .upload-container {
+    padding: 30px 20px;
+  }
+  
+  .editor-container {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    padding-bottom: 120px; /* Add padding to account for fixed buttons */
+  }
+  
+  .editor-area {
+    height: calc(100vh - 300px);
+    min-height: 350px;
+    width: 100%;
+    margin-bottom: 30px; /* Add more space below editor */
+  }
+  
+  .action-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+  
+  .back-button, .download-button {
+    width: 45%;
+    min-width: 0;
+  }
+  
+  /* Ensure there's enough padding at the bottom of the page */
+  .app-content {
+    padding-bottom: 60px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Make the scrolling smoother */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-scrollable {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: auto;
+    min-height: 100vh;
+    position: relative;
+  }
+}
+
+/* Error Message Styling */
+.error-message {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+  width: auto;
+  max-width: 90%;
+}
+
+.error-message p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.error-message button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.error-message button:hover {
+  background-color: #c0392b;
+}
+
+@keyframes slideDown {
   from {
-    transform: rotate(0deg);
+    transform: translate(-50%, -100%);
+    opacity: 0;
   }
   to {
-    transform: rotate(360deg);
+    transform: translate(-50%, 0);
+    opacity: 1;
   }
+}
+
+/* Add this after the app class definition */
+.mobile-scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }

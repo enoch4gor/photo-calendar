@@ -1,0 +1,253 @@
+/* Editor Layout - Based on the wireframe */
+.editor-layout {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+}
+
+/* Canvas Container */
+.canvas-container {
+  flex: 1;
+  min-width: 0;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Controls Panel */
+.controls-panel {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Control Sections */
+.control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Buttons */
+.control-section button {
+  padding: 12px 20px;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-section button:hover {
+  background-color: #f0f0f0;
+}
+
+.control-section button:active {
+  background-color: #e0e0e0;
+}
+
+/* Section Headers */
+.control-section label {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+/* Select Boxes */
+.font-select, .color-select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  width: 100%;
+}
+
+/* Font Select Styles */
+.font-select option {
+  padding: 8px;
+  font-size: 16px;
+}
+
+/* Color Select Styles */
+.color-select option {
+  padding: 8px;
+}
+
+/* Color option box with border */
+.color-box {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #888;
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 3px;
+}
+
+/* For mobile screens - improved color selector */
+@media (max-width: 768px) {
+  .editor-layout {
+    flex-direction: column;
+    height: auto;
+    gap: 15px;
+    overflow-y: auto;
+    padding-bottom: 120px; /* Add space for fixed buttons */
+  }
+  
+  .canvas-container {
+    height: 50vh;
+    min-height: 300px;
+  }
+  
+  .controls-panel {
+    width: 100%;
+    padding-bottom: 50px;
+    margin-bottom: 60px; /* Provide space for fixed buttons */
+    overflow-y: visible;
+  }
+
+  /* Make the control sections more compact */
+  .control-section {
+    margin-bottom: 20px;
+  }
+  
+  /* Adjust font sizes for mobile */
+  .control-section label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .control-section button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+  
+  /* Make month navigation buttons side by side */
+  .control-section:first-child {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .control-section:first-child button {
+    width: 48%;
+  }
+  
+  /* Improved color selector for mobile */
+  .color-select {
+    background-color: #fff !important;
+    color: #333 !important;
+    height: 48px; /* Increase height for better touch target */
+    border: 2px solid #aaa !important;
+    font-weight: bold;
+    border-radius: 4px;
+    -webkit-appearance: menulist; /* Force native dropdown appearance on iOS */
+    appearance: menulist;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Force a visible background and text color on iOS */
+  .color-select option {
+    background-color: #fff !important;
+    color: #333 !important;
+    padding: 8px !important;
+  }
+  
+  /* Color select wrapper */
+  .color-select-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+  
+  /* Selected color display */
+  .selected-color {
+    margin-top: 12px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Make app content scrollable */
+  .app {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tooltip/Hint Styling */
+.hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.canvas-container:hover .hint {
+  opacity: 1;
+}
+
+/* iOS-specific color selector */
+.ios-color-select {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border: 2px solid #aaa;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-option {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.color-option:last-child {
+  border-bottom: none;
+}
+
+.color-option.selected {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.color-option .color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  margin-right: 10px;
+}
+
+.color-option .color-name {
+  color: #333;
+  font-size: 14px;
+} 
