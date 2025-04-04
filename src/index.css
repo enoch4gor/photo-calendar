@@ -14,28 +14,14 @@ code {
 
 @font-face {
   font-family: 'Always Forever';
-  src: url('./fonts/always forever.ttf');
+  src: url('./fonts/always forever.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Have Idea';
-  src: url('./fonts/Have Idea.ttf');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Rockybilly';
-  src: url('./fonts/Rockybilly.ttf');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Shooting Star';
-  src: url('./fonts/Shooting Star.ttf');
+  src: url('./fonts/Have Idea.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
@@ -50,6 +36,13 @@ code {
 @font-face {
   font-family: 'Yellowtail';
   src: url('./fonts/Yellowtail.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Shooting Star';
+  src: url('./fonts/Shooting Star.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }

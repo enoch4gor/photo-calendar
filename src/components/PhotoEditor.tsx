@@ -15,7 +15,6 @@ const AVAILABLE_FONTS = [
   { name: 'Always Forever', value: 'Always Forever' },
   { name: 'Pacifico', value: 'Pacifico' },
   { name: 'Yellowtail', value: 'Yellowtail' },
-  { name: 'Rockybilly', value: 'Rockybilly' },
   { name: 'Shooting Star', value: 'Shooting Star' }
 ];
 
