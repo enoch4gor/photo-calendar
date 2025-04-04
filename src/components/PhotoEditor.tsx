@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { Stage, Layer, Image as KonvaImage, Transformer, Group, Rect } from 'react-konva';
 import useImage from 'use-image';
 import CalendarGenerator from './CalendarGenerator';
@@ -268,10 +268,10 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
       return;
     }
     
-    // Skip canvas filtering for mobile browsers where it's problematic
-    // On these devices, we'll use direct CSS filtering instead
-    if ((isIOSDevice || isAndroidDevice) && (isMobileChromeDevice || isMobileSafariDevice)) {
-      console.log('Mobile browser detected - using CSS filters directly');
+    // Skip canvas filtering for iOS Chrome - we know it's problematic
+    // Just use CSS filters directly for all iOS browsers
+    if (isIOSDevice) {
+      console.log('iOS device detected - skipping canvas filtering');
       setFilteredImage(null);
       return;
     }
@@ -363,6 +363,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
       img.onload = null;
       img.onerror = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userImage, selectedFilter, isIOSDevice, isAndroidDevice, isMobileChromeDevice, isMobileSafariDevice]);
 
   // Use the filtered image if available
@@ -490,9 +491,19 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
     }
   };
 
+  // Get current filter style to apply
+  const currentFilterStyle = useMemo(() => {
+    if (selectedFilter === 'none') return {};
+    const filter = PHOTO_FILTERS.find(f => f.value === selectedFilter);
+    return filter?.style || {};
+  }, [selectedFilter]);
+
   return (
     <div className="editor-layout">
-      <div className="canvas-container">
+      <div 
+        className="canvas-container"
+        style={isIOSDevice ? currentFilterStyle : {}}
+      >
         <Stage 
           ref={stageRef}
           width={photoSize.width} 
@@ -512,9 +523,8 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                 image={displayImage} 
                 width={photoSize.width}
                 height={photoSize.height}
-                /* Apply CSS filter directly as fallback if no filteredImage is available */
-                {...((!filteredImage && selectedFilter !== 'none' && 
-                    ((isIOSDevice || isAndroidDevice) && (isMobileChromeDevice || isMobileSafariDevice))) ? {
+                /* Apply CSS filter directly on iOS or as fallback if no filteredImage is available */
+                {...((isIOSDevice || (!filteredImage && selectedFilter !== 'none')) ? {
                   globalCompositeOperation: 'source-over',
                   ...PHOTO_FILTERS.find(f => f.value === selectedFilter)?.style
                 } : {})}
@@ -861,11 +871,12 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                       onClick={() => setSelectedFilter(filter.value)}
                     >
                       <div 
-                        className="filter-thumbnail" 
+                        className={`filter-thumbnail filter-${filter.value}`}
                         style={{
                           backgroundImage: userImage ? `url(${userImage})` : 'none',
-                          ...(filter.value !== 'none' ? filter.style : {})
+                          ...(filter.value !== 'none' && !isIOSDevice ? filter.style : {})
                         }}
+                        data-filter={filter.value}
                       />
                       <span className="filter-name">{filter.name}</span>
                     </div>
@@ -900,11 +911,12 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                       title={filter.name}
                     >
                       <div 
-                        className="filter-thumbnail" 
+                        className={`filter-thumbnail filter-${filter.value}`}
                         style={{
                           backgroundImage: userImage ? `url(${userImage})` : 'none',
-                          ...(filter.value !== 'none' ? filter.style : {})
+                          ...(filter.value !== 'none' && !isIOSDevice ? filter.style : {})
                         }}
+                        data-filter={filter.value}
                       />
                     </div>
                   ))}

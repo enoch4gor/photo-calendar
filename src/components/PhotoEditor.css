@@ -538,4 +538,54 @@
   60% {
     transform: translateX(-50%) translateY(-5px);
   }
+}
+
+/* iOS Direct Filter Support - Ensures filters work on iOS browsers */
+@supports (-webkit-touch-callout: none) {
+  /* iOS-specific filter styling */
+  .canvas-container .konvajs-content canvas {
+    -webkit-filter: none !important; /* Reset any filters */
+  }
+  
+  /* Style canvas for iOS Safari */
+  #userPhoto {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+  }
+  
+  /* Special styling for each filter type */
+  #userPhoto[filter*="clarendon"] {
+    -webkit-filter: contrast(1.2) saturate(1.35) brightness(1.1) !important;
+    filter: contrast(1.2) saturate(1.35) brightness(1.1) !important;
+  }
+  
+  #userPhoto[filter*="gingham"] {
+    -webkit-filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2) !important;
+    filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2) !important;
+  }
+  
+  #userPhoto[filter*="juno"] {
+    -webkit-filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8) !important;
+    filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8) !important;
+  }
+}
+
+/* Filter class styles for better browser compatibility */
+.filter-clarendon {
+  -webkit-filter: contrast(1.2) saturate(1.35) brightness(1.1);
+  filter: contrast(1.2) saturate(1.35) brightness(1.1);
+}
+
+.filter-gingham {
+  -webkit-filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2);
+  filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2);
+}
+
+.filter-juno {
+  -webkit-filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8);
+  filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8);
 } 
