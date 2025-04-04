@@ -160,83 +160,214 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
         // Use setTimeout to ensure the UI updates before taking the screenshot
         setTimeout(() => {
           try {
-            // Calculate a higher pixel ratio for mobile to ensure good quality
-            // Mobile devices typically have higher DPI screens
+            // For mobile devices, use an extreme pixel ratio to ensure high quality
+            // Calculate based on both device pixel ratio and screen size
             const basePixelRatio = window.devicePixelRatio || 1;
-            const exportPixelRatio = isMobile ? Math.max(4, basePixelRatio * 2) : 3;
-            console.log(`Exporting image with pixel ratio: ${exportPixelRatio}`);
+            const screenWidth = window.innerWidth;
             
-            // Get the data URL of the stage with the filtered image
-            const dataUrl = stageRef.current.toDataURL({
-              pixelRatio: exportPixelRatio, // Higher resolution for mobile
-              mimeType: 'image/png',
-              quality: 1
-            });
+            // For smaller screens, use an even higher pixel ratio (6-8) for better quality
+            // Adjust based on screen size to prevent memory issues on very large screens
+            let exportPixelRatio = 3; // Default for desktop
             
-            // For some mobile browsers, they might downscale the image
-            // Let's create a proper high-res canvas to ensure quality
-            if (isMobile || isIOSDevice || isAndroidDevice) {
-              const stage = stageRef.current;
-              const stageWidth = stage.width();
-              const stageHeight = stage.height();
+            if (isMobile) {
+              if (screenWidth <= 375) {
+                // Small phones (iPhone SE, etc.)
+                exportPixelRatio = 8;
+              } else if (screenWidth <= 428) {
+                // Medium phones (iPhone 12/13/14, etc.)
+                exportPixelRatio = 7;
+              } else if (screenWidth <= 768) {
+                // Large phones and small tablets
+                exportPixelRatio = 6;
+              }
+            }
+            
+            console.log(`Screen width: ${screenWidth}px, Device pixel ratio: ${basePixelRatio}, Export pixel ratio: ${exportPixelRatio}`);
+            
+            // ======== APPROACH #1: Direct Stage Export ========
+            // This fails on some mobile browsers that limit canvas size
+            try {
+              // Get the data URL of the stage with the filtered image
+              const dataUrl = stageRef.current.toDataURL({
+                pixelRatio: exportPixelRatio,
+                mimeType: 'image/png',
+                quality: 1
+              });
               
-              // Create a high-resolution canvas
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Set canvas size to be larger for high quality
-              const scale = exportPixelRatio;
-              canvas.width = stageWidth * scale;
-              canvas.height = stageHeight * scale;
-              
-              if (ctx) {
-                // Draw a blank background to clear the canvas
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Create a new image from the stage data URL
-                const img = new Image();
-                img.onload = () => {
-                  // Draw the image at the scaled size
-                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  
-                  // Get the high-quality data URL
-                  const highQualityDataUrl = canvas.toDataURL('image/png', 1.0);
-                  
-                  // Restore selection state if needed
-                  if (wasSelected) {
-                    setIsSelected(true);
-                  }
-                  
-                  resolve(highQualityDataUrl);
-                };
-                
-                img.onerror = (error) => {
-                  console.error('Error loading stage image for high-quality export:', error);
-                  // Fall back to the original data URL
-                  if (wasSelected) {
-                    setIsSelected(true);
-                  }
-                  resolve(dataUrl);
-                };
-                
-                // Set the source to the original stage data URL
-                img.src = dataUrl;
-              } else {
-                // Fall back to the original data URL if context creation fails
-                console.warn('Could not create canvas context for high-quality export');
+              // If we get here without errors, we can use this approach for some devices
+              if (!(isMobile || isIOSDevice || isAndroidDevice)) {
+                // For desktop, this approach works reliably
                 if (wasSelected) {
                   setIsSelected(true);
                 }
                 resolve(dataUrl);
+                return;
               }
-            } else {
-              // For desktop, the original approach works well
-              if (wasSelected) {
-                setIsSelected(true);
+              
+              // For mobile, we'll proceed with additional approaches
+              // but keep this result as a fallback
+              const fallbackDataUrl = dataUrl;
+              
+              // ======== APPROACH #2: Manual Render for Mobile ========
+              const stage = stageRef.current;
+              const stageWidth = stage.width();
+              const stageHeight = stage.height();
+              
+              // Create an off-screen canvas with dimensions scaled up for high resolution
+              const offscreenCanvas = document.createElement('canvas');
+              const ctx = offscreenCanvas.getContext('2d', {
+                alpha: true,
+                willReadFrequently: true
+              });
+              
+              // Set canvas size to be much larger for extremely high quality
+              const targetWidth = stageWidth * exportPixelRatio;
+              const targetHeight = stageHeight * exportPixelRatio;
+              
+              // Check if we need to use a more conservative size based on device limitations
+              // Safari and some mobile browsers have canvas size limits
+              const maxDimension = 4096; // Some devices have a 4096px limit
+              
+              // If target dimensions exceed limits, scale down while maintaining aspect ratio
+              let finalWidth = targetWidth;
+              let finalHeight = targetHeight;
+              
+              if (targetWidth > maxDimension || targetHeight > maxDimension) {
+                const scaleFactor = Math.min(maxDimension / targetWidth, maxDimension / targetHeight);
+                finalWidth = targetWidth * scaleFactor;
+                finalHeight = targetHeight * scaleFactor;
+                console.log(`Canvas size reduced due to browser limitations: ${finalWidth}x${finalHeight}`);
               }
-              resolve(dataUrl);
+              
+              offscreenCanvas.width = finalWidth;
+              offscreenCanvas.height = finalHeight;
+              
+              if (!ctx) {
+                console.error('Could not get canvas context');
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                resolve(fallbackDataUrl);
+                return;
+              }
+              
+              // Clear the canvas with the same background color as the stage
+              ctx.fillStyle = '#1a1a1a';
+              ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+              
+              // ======== APPROACH #3: Manual Drawing of Elements ========
+              // This is the most reliable approach for mobile
+              // We'll manually draw each element in the stage
+              
+              // 1. Draw the background image with filter if needed
+              if (displayImage) {
+                // Scale the image to fill the canvas
+                const scaleX = finalWidth / stageWidth;
+                const scaleY = finalHeight / stageHeight;
+                
+                try {
+                  // First, draw the base image
+                  ctx.save();
+                  
+                  // Apply the filter directly to the canvas context if needed
+                  if (selectedFilter !== 'none') {
+                    const filterStyle = PHOTO_FILTERS.find(f => f.value === selectedFilter)?.style.filter;
+                    if (filterStyle) {
+                      ctx.filter = filterStyle;
+                    }
+                  }
+                  
+                  // Draw the image at the scaled size
+                  ctx.drawImage(
+                    displayImage,
+                    0, 0, stageWidth, stageHeight, // Source rectangle
+                    0, 0, finalWidth, finalHeight  // Destination rectangle
+                  );
+                  
+                  ctx.restore();
+                } catch (imgError) {
+                  console.error('Error drawing background image:', imgError);
+                }
+              }
+              
+              // 2. Draw the calendar image
+              if (calendarImage) {
+                // Calculate scaling factors
+                const scaleX = finalWidth / stageWidth;
+                const scaleY = finalHeight / stageHeight;
+                
+                try {
+                  // Calculate the scaled position and size of the calendar
+                  const calX = calendarAttrs.x * scaleX;
+                  const calY = calendarAttrs.y * scaleY;
+                  const calWidth = calendarAttrs.width * scaleX;
+                  const calHeight = calendarAttrs.height * scaleY;
+                  
+                  // Add shadow for the calendar
+                  ctx.save();
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                  ctx.shadowBlur = 18 * Math.min(scaleX, scaleY);
+                  ctx.shadowOffsetX = 4 * scaleX;
+                  ctx.shadowOffsetY = 4 * scaleY;
+                  
+                  // Draw the calendar
+                  ctx.drawImage(
+                    calendarImage,
+                    0, 0, calendarImage.width, calendarImage.height, // Source rectangle
+                    calX, calY, calWidth, calHeight  // Destination rectangle
+                  );
+                  
+                  ctx.restore();
+                } catch (calError) {
+                  console.error('Error drawing calendar:', calError);
+                }
+              }
+              
+              // Get the high-quality data URL
+              try {
+                // Use PNG format with maximum quality for best results
+                const highQualityDataUrl = offscreenCanvas.toDataURL('image/png', 1.0);
+                
+                // Restore selection state if needed
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                
+                resolve(highQualityDataUrl);
+              } catch (dataUrlError) {
+                console.error('Error creating data URL from canvas:', dataUrlError);
+                // Fall back to the original approach
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                resolve(fallbackDataUrl);
+              }
+              
+            } catch (stageExportError) {
+              console.error('Error with direct stage export:', stageExportError);
+              
+              // Fallback to a simpler approach if everything else fails
+              try {
+                const simpleDataUrl = stageRef.current.toDataURL({
+                  pixelRatio: Math.min(4, exportPixelRatio), // Use a more conservative value
+                  mimeType: 'image/png',
+                  quality: 1
+                });
+                
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                resolve(simpleDataUrl);
+              } catch (fallbackError) {
+                console.error('Error with fallback export:', fallbackError);
+                // Ultimate fallback - just capture what's visible
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                reject(new Error('Failed to export image'));
+              }
             }
+            
           } catch (error) {
             console.error('Error generating image:', error);
             // Restore selection state if needed
@@ -245,7 +376,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
             }
             reject(error);
           }
-        }, 100); // Increased timeout to ensure UI updates
+        }, 200); // Increased timeout to ensure UI updates
       });
     }
   }));

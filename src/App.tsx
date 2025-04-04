@@ -65,9 +65,11 @@ function App() {
           // Additional processing for mobile to ensure quality
           const fileName = 'photo-calendar.png';
           
-          // Use Blob with proper type for better mobile handling
+          // Extract the image data with minimal processing
           const byteString = atob(cleanImage.split(',')[1]);
           const mimeType = cleanImage.split(',')[0].split(':')[1].split(';')[0];
+          
+          // Create a high-quality blob with minimal compression
           const arrayBuffer = new ArrayBuffer(byteString.length);
           const intArray = new Uint8Array(arrayBuffer);
           
@@ -75,15 +77,39 @@ function App() {
             intArray[i] = byteString.charCodeAt(i);
           }
           
-          // Create a high-quality blob
-          const blob = new Blob([arrayBuffer], { type: mimeType });
+          // Use a high-quality PNG with no compression
+          const blob = new Blob([arrayBuffer], { 
+            type: 'image/png' // Force PNG format for best quality
+          });
           
-          // Use the saveAs function with the blob
-          saveAs(blob, fileName);
+          console.log(`Download image size: ${Math.round(blob.size / 1024)} KB`);
+          
+          // For very small files (which might indicate quality issues),
+          // fall back to a different approach
+          if (blob.size < 100000) { // Less than 100KB is suspiciously small
+            console.warn("Download image size is unusually small, trying alternative approach");
+            
+            // Create a download link and trigger it
+            const link = document.createElement('a');
+            link.href = cleanImage;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            // Use the saveAs function with the blob for normal sized images
+            saveAs(blob, fileName);
+          }
         } catch (mobileError) {
           console.error('Error in mobile-specific download processing:', mobileError);
-          // Fall back to standard download method
-          saveAs(cleanImage, 'photo-calendar.png');
+          
+          // A more direct approach as fallback
+          const link = document.createElement('a');
+          link.href = cleanImage;
+          link.download = 'photo-calendar.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }
       } else {
         // Standard download for desktop
