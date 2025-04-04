@@ -128,14 +128,24 @@
   .editor-layout {
     flex-direction: column;
     height: auto;
-    gap: 15px;
+    gap: 0;
     overflow-y: auto;
     padding-bottom: 150px; /* Increase space for fixed buttons */
+    position: relative;
+    padding-top: calc(40vh + 70px); /* Make space for the fixed canvas + header */
   }
   
   .canvas-container {
     height: 40vh; /* Reduce canvas height to make more room for controls */
     min-height: 250px;
+    position: fixed;
+    top: 70px; /* Add space below the header */
+    left: 0;
+    right: 0;
+    z-index: 10;
+    border-radius: 0 0 8px 8px;
+    border-top: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   }
   
   .controls-panel {
@@ -146,6 +156,10 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
+    z-index: 5;
+    background-color: #f5f5f5;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   }
 
   /* Control sections with better visibility */
@@ -456,4 +470,45 @@
 
 .calendar-selectable:hover {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Scroll indicator for mobile fixed layout */
+.scroll-indicator {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: bounce 1.5s infinite;
+  transition: opacity 0.3s ease;
+}
+
+.scroll-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scroll-arrow {
+  font-size: 20px;
+  margin-top: 4px;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+  60% {
+    transform: translateX(-50%) translateY(-5px);
+  }
 } 

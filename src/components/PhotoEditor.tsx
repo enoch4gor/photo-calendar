@@ -290,7 +290,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
       // Resize the stage based on the loaded image (maintaining aspect ratio)
       // For mobile, use a smaller maximum width to ensure the image fits well
       const maxWidth = isMobile ? window.innerWidth * 0.95 : window.innerWidth * 0.8;
-      const maxHeight = isMobile ? window.innerHeight * 0.4 : window.innerHeight * 0.6;
+      const maxHeight = isMobile ? window.innerHeight * 0.35 : window.innerHeight * 0.6; // Slightly smaller for mobile fixed view
       
       let width = userImg.width;
       let height = userImg.height;
@@ -408,27 +408,30 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
   };
 
   return (
-    <div className="photo-editor">
-      {!isDownloading && (
-        <div className="canvas-container">
-          <Stage
-            width={photoSize.width}
-            height={photoSize.height}
-            ref={stageRef}
-            onMouseDown={handleDeselect}
-            onTouchStart={handleDeselect}
-            style={{ backgroundColor: '#f9f9f9' }}
-          >
-            <Layer>
-              {/* Image with selected filter */}
+    <div className="editor-layout">
+      <div className="canvas-container">
+        <Stage 
+          ref={stageRef}
+          width={photoSize.width} 
+          height={photoSize.height} 
+          onClick={handleDeselect}
+          onTap={handleDeselect}
+          style={{ background: '#1a1a1a' }}
+          pixelRatio={window.devicePixelRatio || 3}
+          imageSmoothingEnabled={false}
+          perfectDrawEnabled={true}
+        >
+          <Layer>
+            {/* Use displayImage instead of userImg to show the filtered version */}
+            {displayImage && (
               <KonvaImage 
+                id="userPhoto"
                 image={displayImage} 
                 width={photoSize.width}
                 height={photoSize.height}
-                filters={selectedFilter !== 'none' ? getFilters(selectedFilter) : []}
               />
-              
-              {/* Calendar Overlay */}
+            )}
+            {calendarImage && (
               <Group
                 x={calendarAttrs.x}
                 y={calendarAttrs.y}
@@ -510,6 +513,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                     console.error('Error during drag end:', error);
                   }
                 }}
+                onTransformEnd={handleTransformEnd}
                 ref={calendarRef}
               >
                 {/* Invisible rectangle that covers the entire calendar area to improve hit detection */}
@@ -536,98 +540,110 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                   listening={true}
                 />
               </Group>
-              
-              {/* Transformer for resizing calendar */}
-              {isSelected && !isDownloading && (
-                <Transformer
-                  ref={transformerRef}
-                  boundBoxFunc={(oldBox, newBox) => {
-                    return keepCalendarWithinBounds(newBox);
-                  }}
-                  onTransformEnd={handleTransformEnd}
-                />
-              )}
-            </Layer>
-          </Stage>
-        </div>
-      )}
-      
-      {/* Controls outside the canvas container */}
-      {!isDownloading && (
-        <div className="editor-controls-wrapper">
-          {/* Calendar Month Controls */}
-          <div className="control-section month-control">
-            <button onClick={() => changeMonth(-1)}>Previous Month</button>
-            <span className="month-display">
-              {getMonthName(calendarMonth)} {calendarYear}
-            </span>
-            <button onClick={() => changeMonth(1)}>Next Month</button>
-          </div>
-          
-          {/* Font Controls */}
-          <div className="control-section">
-            <label>Font Style</label>
-            {isMobile ? (
-              // Mobile font selector
-              <div className="font-select-wrapper">
-                <select 
-                  value={selectedFont} 
-                  onChange={handleFontChange}
-                  className="font-select mobile-select"
-                >
-                  {AVAILABLE_FONTS.map((font) => (
-                    <option 
-                      key={font.value} 
-                      value={font.value}
-                      style={{fontFamily: font.value}}
-                    >
-                      {font.name}
-                    </option>
-                  ))}
-                </select>
-                
-                {/* Current font display */}
-                <div className="selected-font-display">
-                  <span style={{ fontFamily: selectedFont, fontWeight: 'bold', fontSize: '18px' }}>
-                    {AVAILABLE_FONTS.find(f => f.value === selectedFont)?.name || 'Selected Font'}
-                  </span>
-                </div>
-                
-                {/* Font previews */}
-                <div className="font-previews">
-                  {AVAILABLE_FONTS.map((font) => (
-                    <div 
-                      key={font.value} 
-                      className={`font-preview ${selectedFont === font.value ? 'active' : ''}`}
-                      onClick={() => setSelectedFont(font.value)}
-                    >
-                      <span style={{ fontFamily: font.value }}>{font.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // Desktop font selector
-              <select 
-                value={selectedFont} 
-                onChange={handleFontChange}
-                className="font-select"
-                style={{fontFamily: selectedFont}}
-              >
-                {AVAILABLE_FONTS.map((font) => (
-                  <option 
-                    key={font.value} 
-                    value={font.value} 
-                    style={{fontFamily: font.value}}
-                  >
-                    {font.name}
-                  </option>
-                ))}
-              </select>
             )}
+            {isSelected && !isDownloading && calendarRef.current && (
+              <Transformer
+                ref={transformerRef}
+                boundBoxFunc={(oldBox, newBox) => {
+                  // Limit resize to a minimum size
+                  if (newBox.width < 50 || newBox.height < 50) {
+                    return oldBox;
+                  }
+                  
+                  // Limit resize to fit within the stage
+                  if (
+                    newBox.x < 0 ||
+                    newBox.y < 0 ||
+                    newBox.x + newBox.width > photoSize.width ||
+                    newBox.y + newBox.height > photoSize.height
+                  ) {
+                    // If out of bounds, constrain to fit
+                    const constrainedBox = { ...newBox };
+                    
+                    // Constrain width and position
+                    if (newBox.x < 0) {
+                      constrainedBox.width += newBox.x;
+                      constrainedBox.x = 0;
+                    }
+                    if (newBox.x + newBox.width > photoSize.width) {
+                      constrainedBox.width = photoSize.width - newBox.x;
+                    }
+                    
+                    // Constrain height and position
+                    if (newBox.y < 0) {
+                      constrainedBox.height += newBox.y;
+                      constrainedBox.y = 0;
+                    }
+                    if (newBox.y + newBox.height > photoSize.height) {
+                      constrainedBox.height = photoSize.height - newBox.y;
+                    }
+                    
+                    // Ensure minimum size is maintained
+                    if (constrainedBox.width < 50) constrainedBox.width = 50;
+                    if (constrainedBox.height < 50) constrainedBox.height = 50;
+                    
+                    return constrainedBox;
+                  }
+                  
+                  return newBox;
+                }}
+              />
+            )}
+          </Layer>
+        </Stage>
+        
+        {/* Hint for users - update to make it clearer */}
+        {calendarImage && !isSelected && !isDownloading && (
+          <div className="hint">Click on calendar to resize</div>
+        )}
+
+        {/* Add additional hint for mobile users */}
+        {isMobile && calendarImage && !isSelected && !isDownloading && (
+          <div className="calendar-hint">Tap once to resize the calendar</div>
+        )}
+      </div>
+      
+      {/* Controls Panel - Make it more compact for mobile */}
+      {!isDownloading && (
+        <div className="controls-panel">
+          {/* Month Navigation */}
+          <div className="control-section">
+            <label>Month</label>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+              <button onClick={() => changeMonth(-1)}>
+                {isMobile ? 'Prev' : 'Previous Month'}
+              </button>
+              <button onClick={() => changeMonth(1)}>
+                {isMobile ? 'Next' : 'Next Month'}
+              </button>
+            </div>
           </div>
           
-          {/* Color Controls */}
+          {/* Font Options */}
+          <div className="control-section">
+            <label>Font</label>
+            <select 
+              value={selectedFont} 
+              onChange={handleFontChange}
+              className="font-select"
+            >
+              {AVAILABLE_FONTS.map((font) => (
+                <option 
+                  key={font.value} 
+                  value={font.value}
+                  style={{ 
+                    fontFamily: font.value,
+                    fontSize: '18px',
+                    padding: '10px'
+                  }}
+                >
+                  {font.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Font Color */}
           <div className="control-section">
             <label>Font Color</label>
             {isMobile ? (
@@ -714,7 +730,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
             )}
           </div>
           
-          {/* Photo Filter Controls */}
+          {/* Photo Filter - made more compact */}
           <div className="control-section">
             <label>Photo Filter</label>
             {isMobile ? (
@@ -835,22 +851,5 @@ function getContrastColor(hexColor: string): string {
   // Return black for light colors, white for dark colors
   return luminance > 0.5 ? '#000000' : '#ffffff';
 }
-
-// Helper function to get filters based on selected filter name
-const getFilters = (filterName: string) => {
-  // For simplicity, we'll return empty filters now
-  // In a real implementation, you would add actual Konva filters based on the filter name
-  // For example: return [new Konva.Filters.Brighten({ brightness: 0.2 })];
-  return [];
-};
-
-// Helper function to get month name from month number
-const getMonthName = (month: number): string => {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June', 
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  return monthNames[month];
-};
 
 export default PhotoEditor; 

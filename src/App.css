@@ -198,139 +198,88 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Mobile layout styling */
-.mobile-layout {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  height: calc(100vh - 80px); /* Account for header */
-  overflow: hidden;
-}
-
+/* Mobile specific fixes */
 @media (max-width: 768px) {
   body, html {
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     background-color: #f5f5f5;
   }
   
   .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100%;
+    position: relative;
+    overflow-y: auto;
   }
   
   .app-header {
-    flex: 0 0 auto;
-    z-index: 20;
-  }
-  
-  .app-content.mobile-layout {
-    flex: 1;
-    overflow: hidden;
-    padding: 0;
-  }
-  
-  .editor-container {
-    flex: 0 0 50vh;
-    min-height: 300px;
-    max-height: 50vh;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-    background-color: #f5f5f5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .editor-area {
-    width: 100%;
-    height: 100%;
-    min-height: unset;
-    max-height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20; /* Above the fixed canvas */
+    background-color: #5e60ce;
+    padding: 10px 0;
     margin-bottom: 0;
-  }
-  
-  .controls-container {
-    flex: 1 1 auto;
-    width: 100%;
-    overflow-y: auto;
-    padding: 15px;
-    background-color: white;
-    border-top: 1px solid #e0e0e0;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .action-buttons {
+    height: 70px; /* Fixed height to ensure consistent spacing */
     display: flex;
-    gap: 10px;
-    width: 100%;
-    justify-content: space-around;
-    padding: 10px;
-    margin-bottom: 60px; /* Add space at the bottom of the scrollable area */
-  }
-  
-  .back-button, .download-button {
-    min-width: 120px;
-    padding: 12px 20px;
-    flex: 1;
-    max-width: 45%;
-  }
-  
-  /* Ensure canvas comes first in the flow */
-  .photo-editor {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* Fix for code dialog on mobile */
-  .code-dialog-overlay {
-    z-index: 100;
+    justify-content: center;
   }
   
   .app-header h1 {
     font-size: 32px;
+    margin: 0;
+  }
+  
+  .app-content {
+    position: relative;
+    z-index: 5;
+    padding-top: 70px; /* Add padding to account for fixed header */
   }
   
   .upload-container {
     padding: 30px 20px;
+    margin-top: 20px;
   }
   
-  .button-container {
+  .editor-container {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    padding: 0; /* Remove padding as it's handled in the child components */
+  }
+  
+  .editor-area {
+    width: 100%;
+    height: auto;
+    margin: 0; /* Remove margins */
+    padding: 0; /* Remove padding */
+  }
+  
+  .action-buttons {
     position: fixed;
     bottom: 0;
     left: 0;
-    right: 0;
-    background-color: white;
-    padding: 10px;
-    display: flex;
-    justify-content: space-around;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 15px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 20;
+    z-index: 100;
+    flex-direction: row;
+    justify-content: space-around;
   }
   
-  button {
-    margin: 5px;
+  .back-button, .download-button {
+    width: 45%;
+    min-width: 0;
   }
   
-  /* Ensure there's enough padding at the bottom of the page */
-  .app-content {
-    padding-bottom: 80px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Make the scrolling smoother */
-  * {
-    -webkit-overflow-scrolling: touch;
+  /* Ensure the code dialog appears above the fixed canvas */
+  .code-dialog-overlay {
+    z-index: 1000;
   }
 }
 
@@ -544,87 +493,5 @@ body {
   .get-code-button {
     padding: 8px 16px;
     font-size: 13px;
-  }
-}
-
-.editor-controls-wrapper {
-  width: 100%;
-  padding: 15px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.month-control {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.month-display {
-  font-weight: bold;
-  font-size: 18px;
-  min-width: 150px;
-  text-align: center;
-}
-
-.font-select-wrapper,
-.filter-select-wrapper {
-  margin-top: 8px;
-}
-
-.font-preview, 
-.filter-preview {
-  padding: 8px;
-  margin: 5px;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #f5f5f5;
-  transition: all 0.2s;
-}
-
-.font-preview.active,
-.filter-preview.active {
-  background-color: #e0e0ff;
-  box-shadow: 0 0 0 2px #5e60ce;
-}
-
-.font-previews,
-.filter-previews {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  gap: 5px;
-}
-
-.selected-font-display,
-.selected-filter {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
-}
-
-@media (max-width: 768px) {
-  .canvas-container {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  .editor-controls-wrapper {
-    width: 100%;
-  }
-  
-  .month-control button {
-    padding: 8px 12px;
-    font-size: 14px;
-  }
-  
-  .selected-font-display,
-  .selected-filter {
-    padding: 8px;
   }
 }
