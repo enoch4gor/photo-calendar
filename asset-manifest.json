@@ -1,19 +1,21 @@
 {
   "files": {
-    "main.css": "/photo-calendar/static/css/main.8bf0c922.css",
-    "main.js": "/photo-calendar/static/js/main.1aa3b514.js",
+    "main.css": "/photo-calendar/static/css/main.a67915d4.css",
+    "main.js": "/photo-calendar/static/js/main.576d5f44.js",
     "static/js/453.0b8c3656.chunk.js": "/photo-calendar/static/js/453.0b8c3656.chunk.js",
     "static/media/Pacifico.ttf": "/photo-calendar/static/media/Pacifico.c0d735fc04154e03a691.ttf",
+    "static/media/Rockybilly.ttf": "/photo-calendar/static/media/Rockybilly.028655494c60619766ff.ttf",
     "static/media/Yellowtail.ttf": "/photo-calendar/static/media/Yellowtail.68015177cbf9575be4a4.ttf",
     "static/media/Have Idea.ttf": "/photo-calendar/static/media/Have Idea.939a861d072c70e202ac.ttf",
+    "static/media/Shooting Star.ttf": "/photo-calendar/static/media/Shooting Star.bde5615697bd66cf1273.ttf",
     "static/media/always forever.ttf": "/photo-calendar/static/media/always forever.ba22f382063ee246b519.ttf",
     "index.html": "/photo-calendar/index.html",
-    "main.8bf0c922.css.map": "/photo-calendar/static/css/main.8bf0c922.css.map",
-    "main.1aa3b514.js.map": "/photo-calendar/static/js/main.1aa3b514.js.map",
+    "main.a67915d4.css.map": "/photo-calendar/static/css/main.a67915d4.css.map",
+    "main.576d5f44.js.map": "/photo-calendar/static/js/main.576d5f44.js.map",
     "453.0b8c3656.chunk.js.map": "/photo-calendar/static/js/453.0b8c3656.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.8bf0c922.css",
-    "static/js/main.1aa3b514.js"
+    "static/css/main.a67915d4.css",
+    "static/js/main.576d5f44.js"
   ]
 }
