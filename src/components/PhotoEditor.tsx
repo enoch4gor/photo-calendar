@@ -160,19 +160,83 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
         // Use setTimeout to ensure the UI updates before taking the screenshot
         setTimeout(() => {
           try {
+            // Calculate a higher pixel ratio for mobile to ensure good quality
+            // Mobile devices typically have higher DPI screens
+            const basePixelRatio = window.devicePixelRatio || 1;
+            const exportPixelRatio = isMobile ? Math.max(4, basePixelRatio * 2) : 3;
+            console.log(`Exporting image with pixel ratio: ${exportPixelRatio}`);
+            
             // Get the data URL of the stage with the filtered image
             const dataUrl = stageRef.current.toDataURL({
-              pixelRatio: 3, // Use high resolution
+              pixelRatio: exportPixelRatio, // Higher resolution for mobile
               mimeType: 'image/png',
               quality: 1
             });
             
-            // Restore selection state if needed
-            if (wasSelected) {
-              setIsSelected(true);
+            // For some mobile browsers, they might downscale the image
+            // Let's create a proper high-res canvas to ensure quality
+            if (isMobile || isIOSDevice || isAndroidDevice) {
+              const stage = stageRef.current;
+              const stageWidth = stage.width();
+              const stageHeight = stage.height();
+              
+              // Create a high-resolution canvas
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Set canvas size to be larger for high quality
+              const scale = exportPixelRatio;
+              canvas.width = stageWidth * scale;
+              canvas.height = stageHeight * scale;
+              
+              if (ctx) {
+                // Draw a blank background to clear the canvas
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Create a new image from the stage data URL
+                const img = new Image();
+                img.onload = () => {
+                  // Draw the image at the scaled size
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  
+                  // Get the high-quality data URL
+                  const highQualityDataUrl = canvas.toDataURL('image/png', 1.0);
+                  
+                  // Restore selection state if needed
+                  if (wasSelected) {
+                    setIsSelected(true);
+                  }
+                  
+                  resolve(highQualityDataUrl);
+                };
+                
+                img.onerror = (error) => {
+                  console.error('Error loading stage image for high-quality export:', error);
+                  // Fall back to the original data URL
+                  if (wasSelected) {
+                    setIsSelected(true);
+                  }
+                  resolve(dataUrl);
+                };
+                
+                // Set the source to the original stage data URL
+                img.src = dataUrl;
+              } else {
+                // Fall back to the original data URL if context creation fails
+                console.warn('Could not create canvas context for high-quality export');
+                if (wasSelected) {
+                  setIsSelected(true);
+                }
+                resolve(dataUrl);
+              }
+            } else {
+              // For desktop, the original approach works well
+              if (wasSelected) {
+                setIsSelected(true);
+              }
+              resolve(dataUrl);
             }
-            
-            resolve(dataUrl);
           } catch (error) {
             console.error('Error generating image:', error);
             // Restore selection state if needed
@@ -181,7 +245,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
             }
             reject(error);
           }
-        }, 50);
+        }, 100); // Increased timeout to ensure UI updates
       });
     }
   }));

@@ -57,8 +57,38 @@ function App() {
       // Get clean render of just the photo and calendar
       const cleanImage = await editorComponentRef.current.getCleanRender();
       
-      // Save the image
-      saveAs(cleanImage, 'photo-calendar.png');
+      // For mobile browsers, ensure the download happens with proper quality
+      const isMobile = window.innerWidth <= 768;
+      
+      if (isMobile) {
+        try {
+          // Additional processing for mobile to ensure quality
+          const fileName = 'photo-calendar.png';
+          
+          // Use Blob with proper type for better mobile handling
+          const byteString = atob(cleanImage.split(',')[1]);
+          const mimeType = cleanImage.split(',')[0].split(':')[1].split(';')[0];
+          const arrayBuffer = new ArrayBuffer(byteString.length);
+          const intArray = new Uint8Array(arrayBuffer);
+          
+          for (let i = 0; i < byteString.length; i++) {
+            intArray[i] = byteString.charCodeAt(i);
+          }
+          
+          // Create a high-quality blob
+          const blob = new Blob([arrayBuffer], { type: mimeType });
+          
+          // Use the saveAs function with the blob
+          saveAs(blob, fileName);
+        } catch (mobileError) {
+          console.error('Error in mobile-specific download processing:', mobileError);
+          // Fall back to standard download method
+          saveAs(cleanImage, 'photo-calendar.png');
+        }
+      } else {
+        // Standard download for desktop
+        saveAs(cleanImage, 'photo-calendar.png');
+      }
     } catch (error) {
       console.error('Download failed:', error);
       setError("Failed to download the image. Please try again.");
