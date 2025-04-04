@@ -325,6 +325,33 @@
   .canvas-container:not(:has(.konva-transformer)):hover .calendar-hint {
     opacity: 1;
   }
+
+  /* Mobile browser filter support - helps with rendering filters on various browsers */
+  .filter-thumbnail {
+    will-change: filter;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  
+  /* Specific filter styles for preview thumbnails to ensure they render properly */
+  .filter-thumbnail[style*="clarendon"] {
+    -webkit-filter: contrast(1.2) saturate(1.35) brightness(1.1);
+    filter: contrast(1.2) saturate(1.35) brightness(1.1);
+  }
+  
+  .filter-thumbnail[style*="gingham"] {
+    -webkit-filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2);
+    filter: brightness(1.05) hue-rotate(-10deg) sepia(0.2);
+  }
+  
+  .filter-thumbnail[style*="juno"] {
+    -webkit-filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8);
+    filter: sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8);
+  }
 }
 
 /* Tooltip/Hint Styling */

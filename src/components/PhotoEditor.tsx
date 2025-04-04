@@ -67,6 +67,24 @@ const isIOS = () => {
   || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 };
 
+// Helper to detect Android devices
+const isAndroid = () => {
+  return /Android/i.test(navigator.userAgent);
+};
+
+// Helper to detect mobile Chrome
+const isMobileChrome = () => {
+  return /Chrome/i.test(navigator.userAgent) && 
+    (/Android/i.test(navigator.userAgent) || /iPhone|iPad|iPod/i.test(navigator.userAgent));
+};
+
+// Helper to detect mobile Safari
+const isMobileSafari = () => {
+  return /Safari/i.test(navigator.userAgent) && 
+    !/Chrome/i.test(navigator.userAgent) && 
+    (/iPhone|iPad|iPod/i.test(navigator.userAgent));
+};
+
 const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloading = false }, ref) => {
   const [photoSize, setPhotoSize] = useState({ width: 800, height: 600 });
   const [calendarDataUrl, setCalendarDataUrl] = useState<string>('');
@@ -96,6 +114,9 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
   
   // Add iOS detection
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isAndroidDevice, setIsAndroidDevice] = useState(false);
+  const [isMobileChromeDevice, setIsMobileChromeDevice] = useState(false);
+  const [isMobileSafariDevice, setIsMobileSafariDevice] = useState(false);
   
   // Add the filtered image state
   const [filteredImage, setFilteredImage] = useState<string | null>(null);
@@ -103,6 +124,9 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
   // Check if it's an iOS device on mount
   useEffect(() => {
     setIsIOSDevice(isIOS());
+    setIsAndroidDevice(isAndroid());
+    setIsMobileChromeDevice(isMobileChrome());
+    setIsMobileSafariDevice(isMobileSafari());
   }, []);
   
   // Update mobile state on resize
@@ -243,44 +267,103 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
       setFilteredImage(null);
       return;
     }
+    
+    // Skip canvas filtering for mobile browsers where it's problematic
+    // On these devices, we'll use direct CSS filtering instead
+    if ((isIOSDevice || isAndroidDevice) && (isMobileChromeDevice || isMobileSafariDevice)) {
+      console.log('Mobile browser detected - using CSS filters directly');
+      setFilteredImage(null);
+      return;
+    }
 
+    // Create new image and ensure it loads properly
     const img = new Image();
     img.crossOrigin = 'Anonymous';
+    
+    // Set up error handling
+    const handleImageError = () => {
+      console.error('Error loading image for filtering');
+      setFilteredImage(null);
+    };
+    
+    img.onerror = handleImageError;
+    
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      try {
+        // Create a canvas with proper dimensions
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          console.error('Could not get canvas context');
+          setFilteredImage(null);
+          return;
+        }
 
-      // Draw the original image
-      ctx.drawImage(img, 0, 0);
-
-      // Get filter style
-      const filterStyle = filter.style.filter || '';
-      
-      // Apply the filter to the image
-      if (filterStyle) {
-        // Apply filter using CSS filter
-        const tempImg = new Image();
-        tempImg.onload = () => {
-          // Reset canvas with filtered image
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          // Apply filter
-          ctx.filter = filterStyle;
-          ctx.drawImage(tempImg, 0, 0);
-          ctx.filter = 'none';
-          
-          // Get the filtered image data URL
-          setFilteredImage(canvas.toDataURL('image/png'));
-        };
-        tempImg.src = canvas.toDataURL('image/png');
+        // Draw the original image
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Get filter style
+        const filterStyle = filter.style.filter || '';
+        
+        if (!filterStyle) {
+          setFilteredImage(null);
+          return;
+        }
+        
+        // Direct filter application without using a second image
+        // This is more reliable on mobile
+        ctx.filter = filterStyle;
+        
+        // Create a temporary canvas for the filtered image
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        
+        if (!tempCtx) {
+          console.error('Could not get temp canvas context');
+          setFilteredImage(null);
+          return;
+        }
+        
+        // Draw the original image on the temp canvas with the filter applied
+        tempCtx.filter = filterStyle;
+        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Get the filtered image data URL
+        try {
+          const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.92);
+          setFilteredImage(dataUrl);
+        } catch (error) {
+          console.error('Error creating data URL:', error);
+          setFilteredImage(null);
+        }
+      } catch (error) {
+        console.error('Error applying filter:', error);
+        setFilteredImage(null);
       }
     };
+    
+    // Set a timeout to handle potential image loading issues
+    const timeout = setTimeout(() => {
+      if (!filteredImage) {
+        console.warn('Image filtering timed out, using original image');
+        setFilteredImage(null);
+      }
+    }, 3000);
+    
+    // Start loading the image
     img.src = userImage;
     
-  }, [userImage, selectedFilter]);
+    return () => {
+      clearTimeout(timeout);
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [userImage, selectedFilter, isIOSDevice, isAndroidDevice, isMobileChromeDevice, isMobileSafariDevice]);
 
   // Use the filtered image if available
   const [displayImage] = useImage(filteredImage || userImage);
@@ -429,6 +512,12 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                 image={displayImage} 
                 width={photoSize.width}
                 height={photoSize.height}
+                /* Apply CSS filter directly as fallback if no filteredImage is available */
+                {...((!filteredImage && selectedFilter !== 'none' && 
+                    ((isIOSDevice || isAndroidDevice) && (isMobileChromeDevice || isMobileSafariDevice))) ? {
+                  globalCompositeOperation: 'source-over',
+                  ...PHOTO_FILTERS.find(f => f.value === selectedFilter)?.style
+                } : {})}
               />
             )}
             {calendarImage && (
@@ -775,7 +864,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                         className="filter-thumbnail" 
                         style={{
                           backgroundImage: userImage ? `url(${userImage})` : 'none',
-                          ...filter.style
+                          ...(filter.value !== 'none' ? filter.style : {})
                         }}
                       />
                       <span className="filter-name">{filter.name}</span>
@@ -814,7 +903,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                         className="filter-thumbnail" 
                         style={{
                           backgroundImage: userImage ? `url(${userImage})` : 'none',
-                          ...filter.style
+                          ...(filter.value !== 'none' ? filter.style : {})
                         }}
                       />
                     </div>
