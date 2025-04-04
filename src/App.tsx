@@ -5,6 +5,8 @@ import './App.css';
 
 // Secret code for download verification
 const SECRET_CODE = "CALPANION";
+// Key for localStorage
+const VERIFICATION_KEY = "photo_calendar_verified";
 
 function App() {
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -14,19 +16,15 @@ function App() {
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [secretCode, setSecretCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isVerified, setIsVerified] = useState(false);
   
   const editorRef = useRef<HTMLDivElement>(null);
   const editorComponentRef = useRef<any>(null);
 
-  // Update mobile state on resize
+  // Check localStorage on component mount
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const verified = localStorage.getItem(VERIFICATION_KEY) === 'true';
+    setIsVerified(verified);
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,45 +43,58 @@ function App() {
   };
 
   const initiateDownload = useCallback(() => {
-    // Show the code dialog
+    // If already verified, proceed directly to download
+    if (isVerified) {
+      processDownload();
+      return;
+    }
+    
+    // Otherwise show the code dialog
     setShowCodeDialog(true);
     setSecretCode('');
     setCodeError(null);
-  }, []);
+  }, [isVerified]);
+
+  const processDownload = useCallback(async () => {
+    if (!editorComponentRef.current || !editorRef.current) {
+      setError("The editor isn't ready yet. Please try again.");
+      return;
+    }
+    
+    // Clear any previous errors
+    setError(null);
+    
+    try {
+      setIsDownloading(true);
+      
+      // Get clean render of just the photo and calendar
+      const cleanImage = await editorComponentRef.current.getCleanRender();
+      
+      // Save the image
+      saveAs(cleanImage, 'photo-calendar.png');
+    } catch (error) {
+      console.error('Download failed:', error);
+      setError("Failed to download the image. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [setError, setIsDownloading]);
 
   const verifyAndDownload = useCallback(async () => {
     // Verify secret code - make it case-insensitive
     if (secretCode.trim().toUpperCase() === SECRET_CODE.toUpperCase()) {
+      // Store verification status in localStorage
+      localStorage.setItem(VERIFICATION_KEY, 'true');
+      setIsVerified(true);
       setShowCodeDialog(false);
       
       // Process the download
-      if (!editorComponentRef.current || !editorRef.current) {
-        setError("The editor isn't ready yet. Please try again.");
-        return;
-      }
-      
-      // Clear any previous errors
-      setError(null);
-      
-      try {
-        setIsDownloading(true);
-        
-        // Get clean render of just the photo and calendar
-        const cleanImage = await editorComponentRef.current.getCleanRender();
-        
-        // Save the image
-        saveAs(cleanImage, 'photo-calendar.png');
-      } catch (error) {
-        console.error('Download failed:', error);
-        setError("Failed to download the image. Please try again.");
-      } finally {
-        setIsDownloading(false);
-      }
+      processDownload();
     } else {
       // Show error for incorrect code
       setCodeError("Wrong secret code. Please get the correct code.");
     }
-  }, [secretCode]);
+  }, [secretCode, processDownload]);
 
   const handleGetCode = useCallback(() => {
     // Open the Gumroad page in a new tab
@@ -102,11 +113,11 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app mobile-scrollable">
       <header className="app-header">
         <h1>Photo Calendar Creator</h1>
       </header>
-      <main className={`app-content ${isMobile ? 'mobile-layout' : ''}`}>
+      <main className="app-content">
         {error && (
           <div className="error-message">
             <p>{error}</p>
@@ -129,32 +140,27 @@ function App() {
             </label>
           </div>
         ) : (
-          <>
-            <div className="editor-container">
-              <div ref={editorRef} className="editor-area">
-                <PhotoEditor 
-                  userImage={userImage || ''} 
-                  ref={editorComponentRef} 
-                  isDownloading={isDownloading}
-                />
-              </div>
+          <div className="editor-container">
+            <div ref={editorRef} className="editor-area">
+              <PhotoEditor 
+                userImage={userImage || ''} 
+                ref={editorComponentRef} 
+                isDownloading={isDownloading}
+              />
             </div>
-            
-            <div className="controls-container">
-              <div className="action-buttons">
-                <button className="back-button" onClick={handleBack}>
-                  Back
-                </button>
-                <button 
-                  className="download-button" 
-                  onClick={initiateDownload}
-                  disabled={isDownloading}
-                >
-                  {isDownloading ? 'Processing...' : 'Download'}
-                </button>
-              </div>
+            <div className="action-buttons">
+              <button className="back-button" onClick={handleBack}>
+                Back
+              </button>
+              <button 
+                className="download-button" 
+                onClick={initiateDownload}
+                disabled={isDownloading}
+              >
+                {isDownloading ? 'Processing...' : 'Download'}
+              </button>
             </div>
-          </>
+          </div>
         )}
         
         {/* Secret code verification dialog */}
