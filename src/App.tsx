@@ -42,19 +42,6 @@ function App() {
     }
   };
 
-  const initiateDownload = useCallback(() => {
-    // If already verified, proceed directly to download
-    if (isVerified) {
-      processDownload();
-      return;
-    }
-    
-    // Otherwise show the code dialog
-    setShowCodeDialog(true);
-    setSecretCode('');
-    setCodeError(null);
-  }, [isVerified]);
-
   const processDownload = useCallback(async () => {
     if (!editorComponentRef.current || !editorRef.current) {
       setError("The editor isn't ready yet. Please try again.");
@@ -79,6 +66,19 @@ function App() {
       setIsDownloading(false);
     }
   }, [setError, setIsDownloading]);
+
+  const initiateDownload = useCallback(() => {
+    // If already verified, proceed directly to download
+    if (isVerified) {
+      processDownload();
+      return;
+    }
+    
+    // Otherwise show the code dialog
+    setShowCodeDialog(true);
+    setSecretCode('');
+    setCodeError(null);
+  }, [isVerified, processDownload]);
 
   const verifyAndDownload = useCallback(async () => {
     // Verify secret code - make it case-insensitive
