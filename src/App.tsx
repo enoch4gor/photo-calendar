@@ -41,8 +41,8 @@ function App() {
   }, []);
 
   const verifyAndDownload = useCallback(async () => {
-    // Verify secret code
-    if (secretCode.trim() === SECRET_CODE) {
+    // Verify secret code - make it case-insensitive
+    if (secretCode.trim().toUpperCase() === SECRET_CODE.toUpperCase()) {
       setShowCodeDialog(false);
       
       // Process the download
