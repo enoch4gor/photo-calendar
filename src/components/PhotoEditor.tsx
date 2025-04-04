@@ -11,11 +11,11 @@ interface PhotoEditorProps {
 
 // Font options available in the application
 const AVAILABLE_FONTS = [
+  { name: 'Shooting Star', value: 'Shooting Star' },
   { name: 'Have Idea', value: 'Have Idea' },
   { name: 'Always Forever', value: 'Always Forever' },
   { name: 'Pacifico', value: 'Pacifico' },
-  { name: 'Yellowtail', value: 'Yellowtail' },
-  { name: 'Shooting Star', value: 'Shooting Star' }
+  { name: 'Yellowtail', value: 'Yellowtail' }
 ];
 
 // Color options for the font
@@ -104,7 +104,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
   const stageRef = React.useRef<any>(null);
   
   // Font customization states
-  const [selectedFont, setSelectedFont] = useState(AVAILABLE_FONTS[0].value);
+  const [selectedFont, setSelectedFont] = useState('Shooting Star');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0].value);
   
   // Photo filter state
