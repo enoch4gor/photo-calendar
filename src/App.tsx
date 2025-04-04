@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { saveAs } from 'file-saver';
 import PhotoEditor from './components/PhotoEditor';
 import './App.css';
@@ -14,9 +14,20 @@ function App() {
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [secretCode, setSecretCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
   const editorRef = useRef<HTMLDivElement>(null);
   const editorComponentRef = useRef<any>(null);
+
+  // Update mobile state on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,11 +102,11 @@ function App() {
   };
 
   return (
-    <div className="app mobile-scrollable">
+    <div className="app">
       <header className="app-header">
         <h1>Photo Calendar Creator</h1>
       </header>
-      <main className="app-content">
+      <main className={`app-content ${isMobile ? 'mobile-layout' : ''}`}>
         {error && (
           <div className="error-message">
             <p>{error}</p>
@@ -118,27 +129,32 @@ function App() {
             </label>
           </div>
         ) : (
-          <div className="editor-container">
-            <div ref={editorRef} className="editor-area">
-              <PhotoEditor 
-                userImage={userImage || ''} 
-                ref={editorComponentRef} 
-                isDownloading={isDownloading}
-              />
+          <>
+            <div className="editor-container">
+              <div ref={editorRef} className="editor-area">
+                <PhotoEditor 
+                  userImage={userImage || ''} 
+                  ref={editorComponentRef} 
+                  isDownloading={isDownloading}
+                />
+              </div>
             </div>
-            <div className="action-buttons">
-              <button className="back-button" onClick={handleBack}>
-                Back
-              </button>
-              <button 
-                className="download-button" 
-                onClick={initiateDownload}
-                disabled={isDownloading}
-              >
-                {isDownloading ? 'Processing...' : 'Download'}
-              </button>
+            
+            <div className="controls-container">
+              <div className="action-buttons">
+                <button className="back-button" onClick={handleBack}>
+                  Back
+                </button>
+                <button 
+                  className="download-button" 
+                  onClick={initiateDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? 'Processing...' : 'Download'}
+                </button>
+              </div>
             </div>
-          </div>
+          </>
         )}
         
         {/* Secret code verification dialog */}
