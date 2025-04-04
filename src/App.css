@@ -326,3 +326,156 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Secret Code Dialog Styles */
+.code-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.code-dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 30px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.code-dialog h3 {
+  font-family: 'Always Forever', cursive;
+  color: #5e60ce;
+  font-size: 28px;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.code-dialog p {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.code-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.code-dialog-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.cancel-button, .verify-button {
+  padding: 12px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  flex: 1;
+  border: none;
+  font-size: 16px;
+}
+
+.cancel-button {
+  background-color: #f1faee;
+  color: #1d3557;
+  border: 2px solid #a8dadc;
+}
+
+.cancel-button:hover {
+  background-color: #a8dadc;
+}
+
+.verify-button {
+  background-color: #5e60ce;
+  color: white;
+}
+
+.verify-button:hover {
+  background-color: #4a4baa;
+}
+
+.get-code-section {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.get-code-section p {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.get-code-button {
+  background-color: #e63946;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  display: inline-block;
+}
+
+.get-code-button:hover {
+  background-color: #d62b39;
+  transform: translateY(-2px);
+}
+
+.code-error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Mobile responsive styles for the code dialog */
+@media (max-width: 768px) {
+  .code-dialog {
+    padding: 20px;
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .code-dialog h3 {
+    font-size: 24px;
+  }
+  
+  .code-input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .cancel-button, .verify-button {
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  
+  .get-code-button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
