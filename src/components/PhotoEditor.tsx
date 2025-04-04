@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Stage, Layer, Image as KonvaImage, Transformer } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Transformer, Group, Rect } from 'react-konva';
 import useImage from 'use-image';
 import CalendarGenerator from './CalendarGenerator';
 import './PhotoEditor.css';
@@ -25,6 +25,32 @@ const DEFAULT_COLORS = [
   { name: 'Green', value: '#00aa55' },
   { name: 'Purple', value: '#9900ff' },
   { name: 'Yellow', value: '#ffff00' }
+];
+
+// Photo filter options (Instagram-like)
+const PHOTO_FILTERS = [
+  { name: 'None', value: 'none', style: {} },
+  { 
+    name: 'Clarendon', 
+    value: 'clarendon',
+    style: {
+      filter: 'contrast(1.2) saturate(1.35) brightness(1.1)'
+    } 
+  },
+  { 
+    name: 'Gingham', 
+    value: 'gingham',
+    style: {
+      filter: 'brightness(1.05) hue-rotate(-10deg) sepia(0.2)'
+    } 
+  },
+  { 
+    name: 'Juno', 
+    value: 'juno',
+    style: {
+      filter: 'sepia(0.35) contrast(1.15) brightness(1.15) saturate(1.8)'
+    } 
+  }
 ];
 
 // Helper to detect iOS devices
@@ -62,11 +88,17 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
   const [selectedFont, setSelectedFont] = useState(AVAILABLE_FONTS[0].value);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLORS[0].value);
   
+  // Photo filter state
+  const [selectedFilter, setSelectedFilter] = useState(PHOTO_FILTERS[0].value);
+  
   // Add a state to track mobile view
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
   // Add iOS detection
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  
+  // Add the filtered image state
+  const [filteredImage, setFilteredImage] = useState<string | null>(null);
   
   // Check if it's an iOS device on mount
   useEffect(() => {
@@ -103,7 +135,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
         // Use setTimeout to ensure the UI updates before taking the screenshot
         setTimeout(() => {
           try {
-            // Get the data URL of the stage
+            // Get the data URL of the stage with the filtered image
             const dataUrl = stageRef.current.toDataURL({
               pixelRatio: 3, // Use high resolution
               mimeType: 'image/png',
@@ -166,6 +198,11 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
     setSelectedColor(e.target.value);
   };
 
+  // Handle filter change
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedFilter(e.target.value);
+  };
+
   // Keep calendar within bounds
   const keepCalendarWithinBounds = (newAttrs: any) => {
     const { x, y, width, height } = newAttrs;
@@ -195,6 +232,58 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
       y: constrainedY
     };
   };
+
+  // Update the filtered image whenever user image or filter changes
+  useEffect(() => {
+    if (!userImage) return;
+
+    // Create a filtered version of the image
+    const filter = PHOTO_FILTERS.find(f => f.value === selectedFilter);
+    if (!filter || selectedFilter === 'none') {
+      setFilteredImage(null);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw the original image
+      ctx.drawImage(img, 0, 0);
+
+      // Get filter style
+      const filterStyle = filter.style.filter || '';
+      
+      // Apply the filter to the image
+      if (filterStyle) {
+        // Apply filter using CSS filter
+        const tempImg = new Image();
+        tempImg.onload = () => {
+          // Reset canvas with filtered image
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // Apply filter
+          ctx.filter = filterStyle;
+          ctx.drawImage(tempImg, 0, 0);
+          ctx.filter = 'none';
+          
+          // Get the filtered image data URL
+          setFilteredImage(canvas.toDataURL('image/png'));
+        };
+        tempImg.src = canvas.toDataURL('image/png');
+      }
+    };
+    img.src = userImage;
+    
+  }, [userImage, selectedFilter]);
+
+  // Use the filtered image if available
+  const [displayImage] = useImage(filteredImage || userImage);
 
   useEffect(() => {
     if (userImg) {
@@ -258,9 +347,21 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
     }
   }, [isSelected]);
 
-  const handleSelect = () => {
+  const handleSelect = useCallback(() => {
     setIsSelected(true);
-  };
+    
+    // Use setTimeout to ensure the state update happens before trying to attach
+    setTimeout(() => {
+      try {
+        if (transformerRef.current && calendarRef.current && calendarRef.current.getLayer()) {
+          transformerRef.current.nodes([calendarRef.current]);
+          transformerRef.current.getLayer().batchDraw();
+        }
+      } catch (error) {
+        console.error('Error setting up transformer after click:', error);
+      }
+    }, 0);
+  }, []);
 
   const handleDeselect = (e: any) => {
     // Deselect when clicking on the stage but not on the calendar
@@ -293,6 +394,13 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
         // Reset scale to avoid accumulation
         node.scaleX(1);
         node.scaleY(1);
+        
+        // Update all children to match the new size
+        const children = node.getChildren();
+        children.forEach((child: any) => {
+          child.width(constrainedAttrs.width);
+          child.height(constrainedAttrs.height);
+        });
       }
     } catch (error) {
       console.error('Error during transform end:', error);
@@ -314,17 +422,17 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
           perfectDrawEnabled={true}
         >
           <Layer>
-            {userImg && (
+            {/* Use displayImage instead of userImg to show the filtered version */}
+            {displayImage && (
               <KonvaImage 
-                image={userImg} 
+                id="userPhoto"
+                image={displayImage} 
                 width={photoSize.width}
                 height={photoSize.height}
               />
             )}
             {calendarImage && (
-              <KonvaImage
-                ref={calendarRef}
-                image={calendarImage}
+              <Group
                 x={calendarAttrs.x}
                 y={calendarAttrs.y}
                 width={calendarAttrs.width}
@@ -332,11 +440,31 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                 draggable={!isDownloading}
                 onClick={handleSelect}
                 onTap={handleSelect}
+                onMouseEnter={(e) => {
+                  // Change cursor to indicate it's selectable
+                  const container = e.target.getStage()?.container();
+                  if (container) {
+                    container.style.cursor = 'pointer';
+                  }
+                  // Add a class to the stage container to show the calendar is selectable
+                  if (e.target.getStage()?.container()) {
+                    e.target.getStage()?.container().classList.add('calendar-selectable');
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  // Reset cursor
+                  const container = e.target.getStage()?.container();
+                  if (container) {
+                    container.style.cursor = 'default';
+                  }
+                  // Remove the class
+                  if (e.target.getStage()?.container()) {
+                    e.target.getStage()?.container().classList.remove('calendar-selectable');
+                  }
+                }}
                 onDblClick={() => {
-                  // Show transform controls on double click
                   setIsSelected(true);
                   
-                  // Use setTimeout to ensure state update has happened
                   setTimeout(() => {
                     try {
                       if (transformerRef.current && calendarRef.current && calendarRef.current.getLayer()) {
@@ -349,10 +477,8 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                   }, 0);
                 }}
                 onDblTap={() => {
-                  // For touch devices
                   setIsSelected(true);
                   
-                  // Use setTimeout to ensure state update has happened
                   setTimeout(() => {
                     try {
                       if (transformerRef.current && calendarRef.current && calendarRef.current.getLayer()) {
@@ -388,15 +514,32 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                   }
                 }}
                 onTransformEnd={handleTransformEnd}
-                shadowColor="rgba(0, 0, 0, 0.85)"
-                shadowBlur={18}
-                shadowOffsetX={4}
-                shadowOffsetY={4}
-                shadowOpacity={0.8}
-                imageSmoothingEnabled={false}
-                perfectDrawEnabled={true}
-                pixelRatio={3}
-              />
+                ref={calendarRef}
+              >
+                {/* Invisible rectangle that covers the entire calendar area to improve hit detection */}
+                <Rect
+                  width={calendarAttrs.width}
+                  height={calendarAttrs.height}
+                  fill="rgba(0,0,0,0.01)"
+                  strokeWidth={0}
+                  listening={true}
+                />
+                {/* The calendar image */}
+                <KonvaImage
+                  image={calendarImage}
+                  width={calendarAttrs.width}
+                  height={calendarAttrs.height}
+                  shadowColor="rgba(0, 0, 0, 0.85)"
+                  shadowBlur={18}
+                  shadowOffsetX={4}
+                  shadowOffsetY={4}
+                  shadowOpacity={0.8}
+                  imageSmoothingEnabled={false}
+                  perfectDrawEnabled={true}
+                  pixelRatio={3}
+                  listening={true}
+                />
+              </Group>
             )}
             {isSelected && !isDownloading && calendarRef.current && (
               <Transformer
@@ -449,23 +592,31 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
           </Layer>
         </Stage>
         
-        {/* Hint for users - hide on very small screens */}
-        {calendarImage && !isSelected && !isDownloading && window.innerWidth > 480 && (
-          <div className="hint">Double-click to resize the calendar</div>
+        {/* Hint for users - update to make it clearer */}
+        {calendarImage && !isSelected && !isDownloading && (
+          <div className="hint">Click on calendar to resize</div>
+        )}
+
+        {/* Add additional hint for mobile users */}
+        {isMobile && calendarImage && !isSelected && !isDownloading && (
+          <div className="calendar-hint">Tap once to resize the calendar</div>
         )}
       </div>
       
-      {/* Controls Panel */}
+      {/* Controls Panel - Make it more compact for mobile */}
       {!isDownloading && (
         <div className="controls-panel">
           {/* Month Navigation */}
           <div className="control-section">
-            <button onClick={() => changeMonth(-1)}>
-              {isMobile ? 'Prev' : 'Previous Month'}
-            </button>
-            <button onClick={() => changeMonth(1)}>
-              {isMobile ? 'Next' : 'Next Month'}
-            </button>
+            <label>Month</label>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+              <button onClick={() => changeMonth(-1)}>
+                {isMobile ? 'Prev' : 'Previous Month'}
+              </button>
+              <button onClick={() => changeMonth(1)}>
+                {isMobile ? 'Next' : 'Next Month'}
+              </button>
+            </div>
           </div>
           
           {/* Font Options */}
@@ -496,7 +647,7 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
           <div className="control-section">
             <label>Font Color</label>
             {isMobile ? (
-              // Custom color selector for mobile
+              // Mobile color selector
               <div className="color-select-wrapper">
                 {isIOSDevice ? (
                   // Special rendering for iOS devices
@@ -576,6 +727,100 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
                   </option>
                 ))}
               </select>
+            )}
+          </div>
+          
+          {/* Photo Filter - made more compact */}
+          <div className="control-section">
+            <label>Photo Filter</label>
+            {isMobile ? (
+              <div className="filter-select-wrapper">
+                <select 
+                  value={selectedFilter} 
+                  onChange={handleFilterChange}
+                  className="filter-select"
+                  style={{ 
+                    backgroundColor: '#ffffff',
+                    color: '#333333',
+                    border: '2px solid #aaaaaa',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {PHOTO_FILTERS.map((filter) => (
+                    <option 
+                      key={filter.value} 
+                      value={filter.value}
+                    >
+                      {filter.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Current filter display */}
+                <div className="selected-filter">
+                  <span style={{ fontWeight: 'bold' }}>
+                    {PHOTO_FILTERS.find(f => f.value === selectedFilter)?.name || 'No Filter'}
+                  </span>
+                </div>
+                
+                {/* Filter previews - made more compact */}
+                <div className="filter-previews">
+                  {PHOTO_FILTERS.map((filter) => (
+                    <div 
+                      key={filter.value} 
+                      className={`filter-preview ${selectedFilter === filter.value ? 'active' : ''}`}
+                      onClick={() => setSelectedFilter(filter.value)}
+                    >
+                      <div 
+                        className="filter-thumbnail" 
+                        style={{
+                          backgroundImage: userImage ? `url(${userImage})` : 'none',
+                          ...filter.style
+                        }}
+                      />
+                      <span className="filter-name">{filter.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Desktop filter selector with preview thumbnails
+              <div className="desktop-filter-selector">
+                <select 
+                  value={selectedFilter} 
+                  onChange={handleFilterChange}
+                  className="filter-select"
+                >
+                  {PHOTO_FILTERS.map((filter) => (
+                    <option 
+                      key={filter.value} 
+                      value={filter.value}
+                    >
+                      {filter.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Filter previews for desktop */}
+                <div className="filter-previews">
+                  {PHOTO_FILTERS.map((filter) => (
+                    <div 
+                      key={filter.value} 
+                      className={`filter-preview ${selectedFilter === filter.value ? 'active' : ''}`}
+                      onClick={() => setSelectedFilter(filter.value)}
+                      title={filter.name}
+                    >
+                      <div 
+                        className="filter-thumbnail" 
+                        style={{
+                          backgroundImage: userImage ? `url(${userImage})` : 'none',
+                          ...filter.style
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>

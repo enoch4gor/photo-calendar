@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 import PhotoEditor from './components/PhotoEditor';
 import './App.css';

@@ -204,11 +204,13 @@ body {
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    background-color: #f5f5f5;
   }
   
   .app {
     min-height: 100%;
     position: relative;
+    overflow-y: auto;
   }
   
   .app-header h1 {
@@ -223,14 +225,15 @@ body {
     display: flex;
     flex-direction: column;
     height: auto;
-    padding-bottom: 120px; /* Add padding to account for fixed buttons */
+    padding-bottom: 150px; /* Increased padding to account for fixed buttons */
+    min-height: 100vh;
   }
   
   .editor-area {
-    height: calc(100vh - 300px);
-    min-height: 350px;
+    height: auto;
+    min-height: 300px;
     width: 100%;
-    margin-bottom: 30px; /* Add more space below editor */
+    margin-bottom: 20px; /* Add more space below editor */
   }
   
   .action-buttons {
@@ -253,7 +256,7 @@ body {
   
   /* Ensure there's enough padding at the bottom of the page */
   .app-content {
-    padding-bottom: 60px;
+    padding-bottom: 80px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -261,14 +264,6 @@ body {
   /* Make the scrolling smoother */
   * {
     -webkit-overflow-scrolling: touch;
-  }
-  
-  .mobile-scrollable {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    height: auto;
-    min-height: 100vh;
-    position: relative;
   }
 }
 

@@ -2,7 +2,7 @@
   "name": "photo-calendar",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://enochtang.github.io/photo-calendar",
+  "homepage": "https://enochtangys.github.io/photo-calendar",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -13,7 +13,6 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.1",
     "file-saver": "^2.0.5",
-    "gh-pages": "^6.3.0",
     "html-to-image": "^1.11.13",
     "konva": "^9.3.20",
     "react": "^19.1.0",
@@ -52,6 +51,7 @@
     ]
   },
   "devDependencies": {
-    "@types/file-saver": "^2.0.7"
+    "@types/file-saver": "^2.0.7",
+    "gh-pages": "^6.3.0"
   }
 }
