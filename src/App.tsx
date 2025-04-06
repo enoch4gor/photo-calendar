@@ -57,6 +57,32 @@ function App() {
       // Get clean render of just the photo and calendar
       const cleanImage = await editorComponentRef.current.getCleanRender();
       
+      // Get the current calendar settings
+      const calendarSettings = editorComponentRef.current.getCalendarSettings();
+      
+      // Log this calendar creation to our API
+      try {
+        const response = await fetch('http://localhost:3001/api/calendars', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageData: cleanImage,
+            settings: calendarSettings
+          })
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to log calendar creation, but continuing with download');
+        } else {
+          console.log('Calendar creation logged successfully');
+        }
+      } catch (apiError) {
+        // Don't prevent download if API logging fails
+        console.warn('Error logging calendar creation:', apiError);
+      }
+      
       // For mobile browsers, ensure the download happens with proper quality
       const isMobile = window.innerWidth <= 768;
       

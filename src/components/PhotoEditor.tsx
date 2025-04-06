@@ -515,6 +515,24 @@ const PhotoEditor = forwardRef<any, PhotoEditorProps>(({ userImage, isDownloadin
           }
         }, 200); // Increased timeout to ensure UI updates
       });
+    },
+    
+    getCalendarSettings: () => {
+      // Return the current calendar settings
+      return {
+        month: calendarMonth,
+        year: calendarYear,
+        fontName: selectedFont,
+        fontColor: selectedColor,
+        filterName: selectedFilter,
+        // Include position and size data
+        position: {
+          x: calendarAttrs.x,
+          y: calendarAttrs.y,
+          width: calendarAttrs.width,
+          height: calendarAttrs.height,
+        }
+      };
     }
   }));
   
